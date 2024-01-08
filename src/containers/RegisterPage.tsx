@@ -1,34 +1,64 @@
 import {
+	Box,
 	Button,
 	FormControl,
 	FormErrorMessage,
-	FormLabel,
-	Heading,
 	Input,
 	InputGroup,
 	InputLeftElement,
+	SimpleGrid,
+	Text,
 } from '@chakra-ui/react'
 import Logo from '../components/Logo'
-import { FaEnvelope, FaPhone, FaUser } from 'react-icons/fa6'
+import {
+	FaEnvelope,
+	FaFacebook,
+	FaGithub,
+	FaGoogle,
+	FaPhone,
+	FaUser,
+	FaXTwitter,
+} from 'react-icons/fa6'
 import {
 	Formik,
 	Field,
 	Form,
-	FormikHelpers,
 	FormikErrors,
 	FormikTouched,
-	FieldProps,
 	FieldInputProps,
 } from 'formik'
-import { useState } from 'react'
 import { MdLock } from 'react-icons/md'
+import * as Yup from 'yup'
+import { Link } from 'react-router-dom'
+import { useAppDispatch } from '../store/store'
+import { registerUser } from '../store/auth/AuthSlice'
+import { useSelector } from 'react-redux'
+
+const RegisterSchema = Yup.object({
+	username: Yup.string().required('Please a username'),
+	firstName: Yup.string().required('Please enter your first name'),
+	surname: Yup.string().required('Please enter your surname'),
+	password: Yup.string()
+		.required('Please enter your password')
+		.min(6, 'Password must be at least 6 characters'),
+	email: Yup.string().required('Please enter your email'),
+	phoneNumber: Yup.number()
+		.required('Please enter your phone number')
+		.min(11, 'Please give 11 characters long'),
+})
 
 interface Values {
+	username: string
 	firstName: string
 	surname: string
 	password: string
 	email: string
 	phoneNumber: number
+}
+
+interface FetchedUser {
+	jwt: string | null
+	user: Values | null
 }
 
 interface CustomFieldProps {
@@ -40,7 +70,31 @@ interface CustomFieldProps {
 }
 
 const RegisterPage = () => {
+	const dispatch = useAppDispatch()
+
+	const loading = useSelector(
+		(state: {
+			user: { loading: 'idle' | 'pending' | 'succeeded' | 'failed' }
+		}) => state.user.loading
+	)
+
+	const data = useSelector(
+		(state: { user: { data: FetchedUser | null } }) => state.user.data
+	)
+
+	const register = (values: Values) => {
+		dispatch(registerUser(values))
+
+		if (loading === 'succeeded') {
+			console.log(data?.user)
+			// if (data?.data) {
+			// 	console.log(data)
+			// }
+		}
+	}
+
 	const initialValues = {
+		username: '',
 		firstName: '',
 		surname: '',
 		password: '',
@@ -49,24 +103,31 @@ const RegisterPage = () => {
 	}
 
 	return (
-		<div>
-			<div className=''>
+		<SimpleGrid alignItems='center' height={'100vh'} margin={'2rem 0rem'}>
+			<Box
+				border='1px'
+				borderColor='gray.200'
+				width='30vw'
+				padding='2rem'
+				borderRadius='10px'
+				margin='auto'
+			>
 				<Logo />
-				<Heading size='md'>Register</Heading>
+				<Text size='md' fontWeight={'500'}>
+					Register
+				</Text>
 
 				<Formik
 					initialValues={initialValues}
-					onSubmit={(
-						values: Values,
-						{ setSubmitting }: FormikHelpers<Values>
-					) => {
+					validationSchema={RegisterSchema}
+					onSubmit={(values: Values) => {
 						console.log(values)
-						setSubmitting(false)
+						register(values)
 					}}
 				>
-					{(props) => (
-						<Form>
-							<Field id='firstName' name='firstName'>
+					<Form>
+						<SimpleGrid spacing='4' marginTop={'1rem'}>
+							<Field id='username' name='username'>
 								{({ field, form }: CustomFieldProps) => (
 									<FormControl
 										isInvalid={
@@ -82,43 +143,83 @@ const RegisterPage = () => {
 											</InputLeftElement>
 											<Input
 												{...field}
-												name='firstName'
-												placeholder='First name'
+												name='username'
+												placeholder='Username'
 												type='text'
 												// onChange={() => console.log(...field)}
 											/>
-											<FormErrorMessage>
-												{form.errors.firstName}
-											</FormErrorMessage>
 										</InputGroup>
+										<FormErrorMessage fontSize='smaller'>
+											{form.errors.username}
+										</FormErrorMessage>
 									</FormControl>
 								)}
 							</Field>
 
-							<Field id='surname' name='surname'>
-								{({ field, form }: CustomFieldProps) => (
-									<FormControl
-										isInvalid={
-											!!(
-												form.errors[field.name as keyof Values] &&
-												form.touched[field.name as keyof Values]
-											)
-										}
-									>
-										<InputGroup>
-											<InputLeftElement>
-												<FaUser color='gray' />
-											</InputLeftElement>
-											<Input
-												{...field}
-												name='surname'
-												placeholder='Surname'
-												type='text'
-											/>
-										</InputGroup>
-									</FormControl>
-								)}
-							</Field>
+							<SimpleGrid
+								columns={2}
+								justifyContent={'center'}
+								// marginTop={'1rem'}
+								spacing={'4'}
+								display={'flex'}
+							>
+								<Field id='firstName' name='firstName'>
+									{({ field, form }: CustomFieldProps) => (
+										<FormControl
+											isInvalid={
+												!!(
+													form.errors[field.name as keyof Values] &&
+													form.touched[field.name as keyof Values]
+												)
+											}
+										>
+											<InputGroup>
+												<InputLeftElement>
+													<FaUser color='gray' />
+												</InputLeftElement>
+												<Input
+													{...field}
+													name='firstName'
+													placeholder='First name'
+													type='text'
+													// onChange={() => console.log(...field)}
+												/>
+											</InputGroup>
+											<FormErrorMessage fontSize='smaller'>
+												{form.errors.firstName}
+											</FormErrorMessage>
+										</FormControl>
+									)}
+								</Field>
+
+								<Field id='surname' name='surname'>
+									{({ field, form }: CustomFieldProps) => (
+										<FormControl
+											isInvalid={
+												!!(
+													form.errors[field.name as keyof Values] &&
+													form.touched[field.name as keyof Values]
+												)
+											}
+										>
+											<InputGroup>
+												<InputLeftElement>
+													<FaUser color='gray' />
+												</InputLeftElement>
+												<Input
+													{...field}
+													name='surname'
+													placeholder='Surname'
+													type='text'
+												/>
+											</InputGroup>
+											<FormErrorMessage fontSize='smaller'>
+												{form.errors.surname}
+											</FormErrorMessage>
+										</FormControl>
+									)}
+								</Field>
+							</SimpleGrid>
 
 							<Field id='email' name='email'>
 								{({ field, form }: CustomFieldProps) => (
@@ -141,6 +242,9 @@ const RegisterPage = () => {
 												type='email'
 											/>
 										</InputGroup>
+										<FormErrorMessage fontSize='smaller'>
+											{form.errors.email}
+										</FormErrorMessage>
 									</FormControl>
 								)}
 							</Field>
@@ -166,6 +270,9 @@ const RegisterPage = () => {
 												type='password'
 											/>
 										</InputGroup>
+										<FormErrorMessage fontSize='smaller'>
+											{form.errors.password}
+										</FormErrorMessage>
 									</FormControl>
 								)}
 							</Field>
@@ -191,23 +298,113 @@ const RegisterPage = () => {
 												type='number'
 											/>
 										</InputGroup>
+										<FormErrorMessage fontSize='smaller'>
+											{form.errors.phoneNumber}
+										</FormErrorMessage>
 									</FormControl>
 								)}
 							</Field>
 
 							<Button
-								mt={4}
-								colorScheme='teal'
-								isLoading={props.isSubmitting}
+								colorScheme='btnPrimary'
+								// color='white'
+								bg='btnPrimary.100'
+								isLoading={loading === 'pending' ? true : false}
+								// isLoading={true}
 								type='submit'
 							>
 								Submit
 							</Button>
-						</Form>
-					)}
+						</SimpleGrid>
+					</Form>
 				</Formik>
-			</div>
-		</div>
+
+				<Text
+					fontSize={'smaller'}
+					textAlign={'center'}
+					mt={'1rem'}
+					color={'gray.500'}
+				>
+					or continue with these social profiles
+				</Text>
+
+				<SimpleGrid
+					columns={4}
+					justifyContent={'center'}
+					marginTop={'1rem'}
+					spacing={'4'}
+					display={'flex'}
+				>
+					<Box
+						border={'1px'}
+						borderColor={'gray.200'}
+						height='2rem'
+						width='2rem'
+						display={'flex'}
+						justifyContent={'center'}
+						alignItems={'center'}
+						borderRadius={'50%'}
+						cursor={'pointer'}
+					>
+						<FaGoogle color='gray' />
+					</Box>
+					<Box
+						border={'1px'}
+						borderColor={'gray.200'}
+						height='2rem'
+						width='2rem'
+						display={'flex'}
+						justifyContent={'center'}
+						alignItems={'center'}
+						borderRadius={'50%'}
+						cursor={'pointer'}
+					>
+						<FaFacebook color='gray' />
+					</Box>
+					<Box
+						border={'1px'}
+						borderColor={'gray.200'}
+						height='2rem'
+						width='2rem'
+						display={'flex'}
+						justifyContent={'center'}
+						alignItems={'center'}
+						borderRadius={'50%'}
+						cursor={'pointer'}
+					>
+						<FaXTwitter color='gray' />
+					</Box>
+					<Box
+						border={'1px'}
+						borderColor={'gray.200'}
+						height='2rem'
+						width='2rem'
+						display={'flex'}
+						justifyContent={'center'}
+						alignItems={'center'}
+						borderRadius={'50%'}
+						cursor={'pointer'}
+					>
+						<FaGithub color='gray' />
+					</Box>
+				</SimpleGrid>
+
+				<Text
+					fontSize={'smaller'}
+					textAlign={'center'}
+					mt={'1rem'}
+					color={'gray.500'}
+				>
+					Already a member?{' '}
+					<span>
+						<Text color={'btnPrimary.100'}>
+							{' '}
+							<Link to={'/login'}>Login</Link>
+						</Text>
+					</span>
+				</Text>
+			</Box>
+		</SimpleGrid>
 	)
 }
 
