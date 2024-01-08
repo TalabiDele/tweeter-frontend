@@ -8,6 +8,11 @@ export interface Values {
   phoneNumber: number | null;
 }
 
+export interface LoginValues {
+  identifier: string;
+  password: string;
+}
+
 interface FetchedUser {
   jwt: string | null;
   user: Values | null
@@ -43,28 +48,10 @@ export const registerUser = createAsyncThunk('user/register', async (data: Value
   return resData
 })
 
-export const userSlice = createSlice({
-  name: 'user',
-  initialState,
-  reducers: {},
-  extraReducers: (builder) => {
-    builder.addCase(registerUser.pending, (state) => {
-      state.loading = 'pending'
-    }).addCase(registerUser.fulfilled, (state, action: PayloadAction<FetchedUser>) => {
-      state.loading = 'succeeded';
-      state.data = action.payload;
-      state.error = null;
-    }).addCase(registerUser.rejected, (state, action: PayloadAction<string>) => {
-      state.loading = 'failed';
-      state.error = action.payload;
-    })
-  },
-})
-
-export const loginUser = createAsyncThunk('user/login', async (data: Values, thunkAPI) => {
+export const loginUser = createAsyncThunk('user/login', async (data: LoginValues, thunkAPI) => {
   console.log(thunkAPI)
 
-  const res = await fetch(`http://localhost:1337/api/auth/local/login?populate=*`, {
+  const res = await fetch(`http://localhost:1337/api/auth/local?populate=*`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -79,6 +66,32 @@ export const loginUser = createAsyncThunk('user/login', async (data: Values, thu
   return resData
 })
 
+export const userSlice = createSlice({
+  name: 'user',
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder.addCase(registerUser.pending, (state) => {
+      state.loading = 'pending'
+    }).addCase(registerUser.fulfilled, (state, action: PayloadAction<FetchedUser>) => {
+      state.loading = 'succeeded';
+      state.data = action.payload;
+      state.error = null;
+    }).addCase(registerUser.rejected, (state, action: PayloadAction<string>) => {
+      state.loading = 'failed';
+      state.error = action.payload;
+    }).addCase(loginUser.pending, (state) => {
+      state.loading = 'pending'
+    }).addCase(loginUser.fulfilled, (state, action: PayloadAction<FetchedUser>) => {
+      state.loading = 'succeeded';
+      state.data = action.payload;
+      state.error = null;
+    }).addCase(loginUser.rejected, (state, action: PayloadAction<string>) => {
+      state.loading = 'failed';
+      state.error = action.payload;
+    })
+  },
+})
 
 export default userSlice.reducer;
 
