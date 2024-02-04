@@ -6,6 +6,15 @@
   box-sizing: border-box;
 }
 
+html {
+  /* background: #F2F2F2; */
+}
+
 body {
   font-family: 'Poppins', sans-serif;
+  background: #F2F2F2 !important;
+}
+
+#root {
+  /* background: #F2F2F2; */
 }

@@ -24,13 +24,14 @@ import {
 	FaGoogle,
 	FaXTwitter,
 } from 'react-icons/fa6'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo'
 import * as Yup from 'yup'
 import { MdLock } from 'react-icons/md'
 import { useAppDispatch } from '../store/store'
-import { loginUser } from '../store/auth/AuthSlice'
+import { checkUserLoggedIn, loginUser } from '../store/auth/AuthSlice'
 import { useSelector } from 'react-redux'
+import { useEffect } from 'react'
 
 const LoginSchema = Yup.object({
 	password: Yup.string()
@@ -44,9 +45,19 @@ interface Values {
 	identifier: string
 }
 
+interface UserValues {
+	id: number
+	bio: string
+	email: string
+	username: string
+	createdAt: string
+	firstname: string
+	surname: string
+}
+
 interface FetchedUser {
 	jwt: string | null
-	user: Values | null
+	user: UserValues | null
 }
 
 interface CustomFieldProps {
@@ -60,6 +71,8 @@ interface CustomFieldProps {
 const LoginPage = () => {
 	const dispatch = useAppDispatch()
 
+	const navigate = useNavigate()
+
 	const loading = useSelector(
 		(state: {
 			user: { loading: 'idle' | 'pending' | 'succeeded' | 'failed' }
@@ -67,8 +80,18 @@ const LoginPage = () => {
 	)
 
 	const data = useSelector(
-		(state: { user: { data: FetchedUser | null } }) => state.user.data
+		(state: { user: { data: UserValues | null } }) => state.user.data
 	)
+
+	useEffect(() => {
+		dispatch(checkUserLoggedIn())
+		console.log(data)
+		if (data) {
+			navigate('/')
+		}
+	}, [data])
+
+	console.log(data?.username)
 
 	const initialValues = {
 		password: '',
@@ -79,10 +102,19 @@ const LoginPage = () => {
 		dispatch(loginUser(values))
 
 		if (loading === 'succeeded') {
-			console.log(data?.user)
+			console.log(data)
+			navigate('/')
 		}
+
 		console.log(values)
 	}
+
+	const isAuthenticated = useSelector(
+		(state: { user: { isAuthenticated: boolean } }) =>
+			state.user.isAuthenticated
+	)
+
+	console.log(isAuthenticated)
 
 	return (
 		<div>
@@ -179,7 +211,7 @@ const LoginPage = () => {
 									// isLoading={true}
 									type='submit'
 								>
-									Submit
+									Login
 								</Button>
 							</SimpleGrid>
 						</Form>
@@ -265,7 +297,7 @@ const LoginPage = () => {
 						<span>
 							<Text color={'btnPrimary.100'}>
 								{' '}
-								<Link to={'/login'}>Register</Link>
+								<Link to={'/register'}>Register</Link>
 							</Text>
 						</span>
 					</Text>

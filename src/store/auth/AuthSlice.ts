@@ -1,4 +1,6 @@
-import {createAsyncThunk, createSlice, PayloadAction} from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
+import Cookies from 'universal-cookie'
+import { jwtDecode } from 'jwt-decode'
 
 export interface Values {
   firstName: string | null;
@@ -6,6 +8,15 @@ export interface Values {
   email: string;
   password: string;
   phoneNumber: number | null;
+}
+export interface UserValues {
+  firstName: string | null;
+  surname: string | null;
+  email: string;
+  password: string;
+  phoneNumber: number | null;
+  id: number
+  bio: string
 }
 
 export interface LoginValues {
@@ -22,14 +33,24 @@ interface UserState {
   data: FetchedUser | null;
   loading: 'idle' | 'pending' | 'succeeded' | 'failed';
   error: string | null;
+  isAuthenticated: boolean
+}
+
+interface Token {
+  name: string;
+  exp: number;
 }
 
 const initialState: UserState = {
   data: null,
   loading: 'idle',
   error: null,
+  isAuthenticated: false
 }
 
+const cookies = new Cookies()
+
+// Register user
 export const registerUser = createAsyncThunk('user/register', async (data: Values, thunkAPI) => {
   console.log(thunkAPI)
 
@@ -43,13 +64,19 @@ export const registerUser = createAsyncThunk('user/register', async (data: Value
 
   const resData = await res.json()
 
+  const decoded = jwtDecode<Token>(resData.jwt)
+
+  cookies.set('tweeter_auth', resData.jwt, {
+    expires: new Date(decoded.exp * 1000),
+  })
+
   console.log(resData)
 
   return resData
 })
 
+// Login user
 export const loginUser = createAsyncThunk('user/login', async (data: LoginValues, thunkAPI) => {
-  console.log(thunkAPI)
 
   const res = await fetch(`http://localhost:1337/api/auth/local?populate=*`, {
     method: 'POST',
@@ -61,7 +88,32 @@ export const loginUser = createAsyncThunk('user/login', async (data: LoginValues
 
   const resData = await res.json()
 
+  const decoded = jwtDecode<Token>(resData.jwt)
+
+  cookies.set('tweeter_auth', resData.jwt, {
+    expires: new Date(decoded.exp * 1000)
+  })
+
   console.log(resData)
+
+  return resData
+})
+
+// Persist user after registration or login
+export const checkUserLoggedIn = createAsyncThunk('user/getUser', async (thunkAPI) => {
+  console.log(thunkAPI)
+
+  const res = await fetch(`http://localhost:1337/api/users/me?populate=*`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${cookies.get('tweeter_auth')}`
+    }
+  })
+
+  const resData = res.json()
+  
+  console.log(res)
 
   return resData
 })
@@ -89,6 +141,17 @@ export const userSlice = createSlice({
     }).addCase(loginUser.rejected, (state, action: PayloadAction<string>) => {
       state.loading = 'failed';
       state.error = action.payload;
+    }).addCase(checkUserLoggedIn.pending, (state) => {
+      state.loading = 'pending';
+    }).addCase(checkUserLoggedIn.fulfilled, (state, action: PayloadAction<FetchedUser>) => {
+      state.loading = 'succeeded';
+      state.data = action.payload;
+      state.error = null;
+      state.isAuthenticated = true;
+    }).addCase(checkUserLoggedIn.rejected, (state, action: PayloadAction<string>) => {
+      state.loading = 'failed';
+      state.error = action.payload;
+      state.isAuthenticated = false;
     })
   },
 })
